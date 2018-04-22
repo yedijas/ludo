@@ -7,11 +7,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Ludo.Modules.Players;
 
 namespace Ludo.Forms
 {
     public partial class StartMenu : Form
     {
+        static List<IPlayer> players = new List<IPlayer>();
         public StartMenu()
         {
             InitializeComponent();
@@ -81,7 +83,19 @@ namespace Ludo.Forms
 
         private void btnPlay_Click(object sender, EventArgs e)
         {
-
+            try
+            {
+                InitPlayers();
+                System.Threading.Thread t = new System.Threading.Thread(
+                    new System.Threading.ThreadStart(ThreadProc));
+                t.Start();
+                this.Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this,
+                    ex.Message, "OMG Error!", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+            }
         }
 
         private void btnCancel_Click(object sender, EventArgs e)
@@ -92,6 +106,41 @@ namespace Ludo.Forms
         private void StartMenu_Load(object sender, EventArgs e)
         {
             HideLists();
+        }
+        
+        public static void ThreadProc()
+        {
+            Board gameBoard = new Board(players.Count);
+            Application.Run(gameBoard);
+        }
+
+        private void InitPlayers()
+        {
+            players = new List<IPlayer>();
+            foreach (ComboBox ctr in
+                        this.Controls.Cast<Control>().Where(
+                            ctrl => ctrl.GetType() == typeof(ComboBox)
+                    ))
+            {
+                switch (ctr.SelectedIndex)
+                {
+                    case 1:
+                        HumanPlayer singlePlayer = new HumanPlayer(
+                           Int32.Parse(ctr.Name.Substring(ctr.Name.Length - 1, 1)));
+                        players.Add(singlePlayer);
+                        break;
+                    case 2:
+                        throw new Exception("AI is not implemented yet, please pick another!");
+                    case 0:
+                        break;
+                    default:
+                        throw new Exception("Invalid selection of player!");
+                }
+            }
+            if (players.Count < 2)
+            {
+                throw new Exception("You should at least play with 1 friend, loner!");
+            }
         }
     }
 }
